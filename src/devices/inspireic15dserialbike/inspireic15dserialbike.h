@@ -31,7 +31,7 @@ class inspireic15dserialbike : public bike {
   private:
     QTimer *refresh = nullptr;
     inspireic15dserialreader *reader = nullptr;
-    bool firstUpdate = true;
+    bool connectionAnnounced = false;
     bool lastPortOpen = false;
     qint64 lastReportedBytes = -1;
     qint64 lastValidFrames = -1;

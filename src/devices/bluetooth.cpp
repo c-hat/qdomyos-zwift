@@ -154,6 +154,8 @@ bluetooth::bluetooth(bool logs, const QString &deviceName, bool noWriteResistanc
         emit deviceConnected(QBluetoothDeviceInfo());
         connect(inspireIC15DSerialBike, &bluetoothdevice::connectedAndDiscovered, this,
                 &bluetooth::connectedAndDiscovered);
+        connect(inspireIC15DSerialBike, &bluetoothdevice::connectedAndDiscovered, this,
+                [this]() { emit deviceConnected(QBluetoothDeviceInfo()); });
         connect(inspireIC15DSerialBike, &inspireic15dserialbike::debug, this, &bluetooth::debug);
         this->signalBluetoothDeviceConnected(inspireIC15DSerialBike);
         return;

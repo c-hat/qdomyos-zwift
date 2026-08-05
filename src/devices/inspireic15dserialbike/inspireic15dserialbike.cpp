@@ -104,9 +104,9 @@ void inspireic15dserialbike::update() {
     requestStop = -1;
 
     update_metrics(false, watts());
-    if (firstUpdate) {
+    if (portOpen && !connectionAnnounced) {
         emit connectedAndDiscovered();
-        firstUpdate = false;
+        connectionAnnounced = true;
     }
 }
 
