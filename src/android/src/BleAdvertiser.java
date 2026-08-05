@@ -80,14 +80,12 @@ public class BleAdvertiser {
             // Keep each legacy BLE payload below 31 bytes. Some Android 8 consoles
             // expand Qt's UUID list and reject the resulting advertisement.
             AdvertiseData advertiseData = new AdvertiseData.Builder()
-                    .addServiceUuid(new ParcelUuid(SERVICE_UUID))
-                    .build();
-            AdvertiseData scanResponse = new AdvertiseData.Builder()
                     .setIncludeDeviceName(true)
+                    .addServiceUuid(new ParcelUuid(SERVICE_UUID))
                     .build();
 
             QLog.d("BleAdvertiser", "Starting compact FTMS bike advertising");
-            advertiser.startAdvertising(settings, advertiseData, scanResponse, advertiseCallback);
+            advertiser.startAdvertising(settings, advertiseData, advertiseCallback);
         } catch (Throwable t) {
             QLog.e("BleAdvertiser", "Bike advertising crash: " + t.toString());
         }
