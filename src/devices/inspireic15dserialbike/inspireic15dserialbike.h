@@ -34,6 +34,7 @@ class inspireic15dserialbike : public bike {
     bool firstUpdate = true;
     bool lastPortOpen = false;
     qint64 lastReportedBytes = -1;
+    qint64 lastValidFrames = -1;
     QString lastError;
 };
 

@@ -9,10 +9,13 @@ inspireic15dserialbike::inspireic15dserialbike(const QString &serialPort, bool n
     m_watt.setType(metric::METRIC_WATT, deviceType());
     Speed.setType(metric::METRIC_SPEED);
 
-    reader = new inspireic15dserialreader(this, serialPort);
+    QSettings settings;
+    const bool metricPolling =
+        settings.value(QZSettings::inspire_ic15d_metric_polling,
+                       QZSettings::default_inspire_ic15d_metric_polling).toBool();
+    reader = new inspireic15dserialreader(this, serialPort, metricPolling);
     reader->start();
 
-    QSettings settings;
     if (settings.value(QZSettings::virtual_device_enabled, QZSettings::default_virtual_device_enabled).toBool()) {
         emit debug(QStringLiteral("creating receive-only IC15D virtual bike interface..."));
         auto virtualBike = new virtualbike(this, true, noHeartService, bikeResistanceOffset, bikeResistanceGain);
@@ -36,11 +39,15 @@ void inspireic15dserialbike::update() {
     qint64 totalBytes;
     QByteArray lastChunk;
     QString error;
-    reader->snapshot(portOpen, totalBytes, lastChunk, error);
+    int cadence;
+    int power;
+    int resistance;
+    qint64 validFrames;
+    reader->snapshot(portOpen, totalBytes, lastChunk, error, cadence, power, resistance, validFrames);
 
     if (portOpen != lastPortOpen || error != lastError) {
         if (portOpen)
-            emit debug(QStringLiteral("IC15D serial port opened in receive-only mode"));
+            emit debug(QStringLiteral("IC15D serial port opened at 19200 8-N-1"));
         if (!error.isEmpty())
             emit debug(QStringLiteral("IC15D serial error: ") + error);
         lastPortOpen = portOpen;
@@ -52,8 +59,24 @@ void inspireic15dserialbike::update() {
         lastReportedBytes = totalBytes;
     }
 
-    // Protocol decoding is intentionally deferred until passive captures identify
-    // packet boundaries and metric fields. Never act on FTMS control requests.
+    if (validFrames != lastValidFrames) {
+        if (cadence >= 0) {
+            Cadence = cadence;
+            Speed = static_cast<double>(cadence) * 0.37497622;
+        }
+        if (power >= 0)
+            m_watt = power;
+        if (resistance >= 0) {
+            Resistance = resistance;
+            emit resistanceRead(Resistance.value());
+        }
+        emit debug(QStringLiteral("IC15D metrics: cadence=") + QString::number(cadence) +
+                   QStringLiteral(" rpm, power=") + QString::number(power) +
+                   QStringLiteral(" W, resistance=") + QString::number(resistance));
+        lastValidFrames = validFrames;
+    }
+
+    // This adapter never acts on FTMS control requests.
     requestResistance = -1;
     requestPower = -1;
     requestInclination = -100;

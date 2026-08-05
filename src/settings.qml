@@ -1738,6 +1738,7 @@ import AndroidStatusBar 1.0
             property bool waterrower_usb: false
             property string freebeat_serialport: ""
             property string inspire_ic15d_serialport: ""
+            property bool inspire_ic15d_metric_polling: false
         }
 
 
@@ -5675,6 +5676,15 @@ import AndroidStatusBar 1.0
                                         window.settings_restart_to_apply = true
                                         toast.show(qsTr("Setting saved!"))
                                     }
+                                }
+                            }
+                            IndicatorOnlySwitch {
+                                text: qsTr("Enable metric polling")
+                                checked: settings.inspire_ic15d_metric_polling
+                                Layout.alignment: Qt.AlignLeft | Qt.AlignTop
+                                onClicked: {
+                                    settings.inspire_ic15d_metric_polling = checked
+                                    window.settings_restart_to_apply = true
                                 }
                             }
                         }

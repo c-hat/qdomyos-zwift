@@ -1822,6 +1822,8 @@ class QZSettings {
 
     static const QString inspire_ic15d_serialport;
     static const QString default_inspire_ic15d_serialport;
+    static const QString inspire_ic15d_metric_polling;
+    static constexpr bool default_inspire_ic15d_metric_polling = false;
 
     static const QString strava_virtual_activity;
     static constexpr bool default_strava_virtual_activity = true;
