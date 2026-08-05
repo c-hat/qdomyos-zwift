@@ -4,6 +4,22 @@
 #include "virtualdevices/virtualbike.h"
 
 #include <QSettings>
+
+namespace {
+int stockResistance(int controllerResistance) {
+    return static_cast<int>(static_cast<double>(controllerResistance) / 2.5);
+}
+
+int stockPower(int cadence, int resistance) {
+    if (cadence <= 0 || resistance < 0)
+        return 0;
+
+    const double watts = (((static_cast<double>(cadence) * 0.132115398) - 0.334360151) * resistance) +
+                         ((static_cast<double>(cadence) * 0.013644937) + 1.583101673);
+    return watts < 2.0 ? 0 : static_cast<int>(watts);
+}
+}
+
 inspireic15dserialbike::inspireic15dserialbike(const QString &serialPort, bool noHeartService,
                                                int8_t bikeResistanceOffset, double bikeResistanceGain) {
     m_watt.setType(metric::METRIC_WATT, deviceType());
@@ -60,19 +76,23 @@ void inspireic15dserialbike::update() {
     }
 
     if (validFrames != lastValidFrames) {
+        const int convertedResistance = resistance >= 0 ? stockResistance(resistance) : -1;
+        const int calculatedPower = stockPower(cadence, convertedResistance);
         if (cadence >= 0) {
             Cadence = cadence;
             Speed = static_cast<double>(cadence) * 0.37497622;
         }
-        if (power >= 0)
-            m_watt = power;
-        if (resistance >= 0) {
-            Resistance = resistance;
+        if (cadence >= 0 && convertedResistance >= 0)
+            m_watt = calculatedPower;
+        if (convertedResistance >= 0) {
+            Resistance = convertedResistance;
             emit resistanceRead(Resistance.value());
         }
         emit debug(QStringLiteral("IC15D metrics: cadence=") + QString::number(cadence) +
-                   QStringLiteral(" rpm, power=") + QString::number(power) +
-                   QStringLiteral(" W, resistance=") + QString::number(resistance));
+                   QStringLiteral(" rpm, power=") + QString::number(calculatedPower) +
+                   QStringLiteral(" W (controller raw=") + QString::number(power) +
+                   QStringLiteral("), resistance=") + QString::number(convertedResistance) +
+                   QStringLiteral(" (controller raw=") + QString::number(resistance) + QStringLiteral(")"));
         lastValidFrames = validFrames;
     }
 
