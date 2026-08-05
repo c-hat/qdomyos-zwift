@@ -173,10 +173,12 @@ void inspireic15dserialreader::run() {
                             validValue = false;
                             break;
                         }
-                        value = (value * 10) + (digit - '0');
                     }
                     if (!validValue)
                         continue;
+                    // The stock app treats the ASCII payload as least-significant digit first.
+                    for (int i = payloadLength + 2; i >= 3; --i)
+                        value = (value * 10) + (static_cast<quint8>(frame.at(i)) - '0');
 
                     const quint8 type = static_cast<quint8>(frame.at(1));
                     {
