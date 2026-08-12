@@ -14,6 +14,37 @@
 #include <QAndroidJniObject>
 #endif
 
+#ifdef Q_OS_ANDROID
+namespace {
+constexpr auto inspireIC15DConsoleModel = "BX_RK3326_A11_INSPIRE_IC15D";
+constexpr auto inspireIC15DConsoleSerialPort = "/dev/ttyS2";
+
+bool restoreInspireIC15DConsoleSettings(QSettings &settings) {
+    const QString model =
+        QAndroidJniObject::getStaticObjectField<jstring>("android/os/Build", "MODEL").toString();
+    if (model != QLatin1String(inspireIC15DConsoleModel) ||
+        !QFile::exists(QLatin1String(inspireIC15DConsoleSerialPort))) {
+        return false;
+    }
+
+    const QString configuredPort =
+        settings.value(QZSettings::inspire_ic15d_serialport, QZSettings::default_inspire_ic15d_serialport).toString();
+    const bool metricPolling =
+        settings.value(QZSettings::inspire_ic15d_metric_polling,
+                       QZSettings::default_inspire_ic15d_metric_polling).toBool();
+    if (configuredPort == QLatin1String(inspireIC15DConsoleSerialPort) && metricPolling) {
+        return true;
+    }
+
+    settings.setValue(QZSettings::inspire_ic15d_serialport, QLatin1String(inspireIC15DConsoleSerialPort));
+    settings.setValue(QZSettings::inspire_ic15d_metric_polling, true);
+    settings.sync();
+    qInfo() << "IC15D console: restored serial metric settings for" << model;
+    return true;
+}
+} // namespace
+#endif
+
 static void updateDiscoveredDevice(QList<QBluetoothDeviceInfo> &devices, const QBluetoothDeviceInfo &device) {
     QMutableListIterator<QBluetoothDeviceInfo> i(devices);
     while (i.hasNext()) {
@@ -78,6 +109,9 @@ bluetooth::bluetooth(bool logs, const QString &deviceName, bool noWriteResistanc
     bool waterrower_usb_ctor =
         settings.value(QZSettings::waterrower_usb, QZSettings::default_waterrower_usb).toBool();
 #ifndef Q_OS_IOS
+#ifdef Q_OS_ANDROID
+    restoreInspireIC15DConsoleSettings(settings);
+#endif
     QString inspireIC15DSerialPort =
         settings.value(QZSettings::inspire_ic15d_serialport, QZSettings::default_inspire_ic15d_serialport).toString();
 #endif
